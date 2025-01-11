@@ -1,0 +1,64 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Agent {
+  id                String      @id @default(cuid())
+  type              String
+  name              String
+  status            String
+  parameters        Json
+  specializations   String[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  metrics           Metrics[]
+  tasks             Task[]
+}
+
+model Metrics {
+  id                String      @id @default(cuid())
+  agentId           String
+  timestamp         DateTime    @default(now())
+  processingPower   Float
+  systemStability   Float
+  executionPrecision Float
+  resourceCapacity  Float
+  latency           Float
+  load              Float
+  uptime            Float
+  agent             Agent       @relation(fields: [agentId], references: [id])
+}
+
+model Task {
+  id                String      @id @default(cuid())
+  agentId           String
+  type              String
+  status            String
+  priority          Int         @default(0)
+  data              Json
+  result            Json?
+  startedAt         DateTime    @default(now())
+  completedAt       DateTime?
+  agent             Agent       @relation(fields: [agentId], references: [id])
+}
+
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
+
+let prisma: PrismaClient;
+
+if (process.env.NODE_ENV === 'production') {
+    prisma = new PrismaClient();
+} else {
+    if (!(global as any).prisma) {
+        (global as any).prisma = new PrismaClient();
+    }
+    prisma = (global as any).prisma;
+}
+
+export { prisma };
